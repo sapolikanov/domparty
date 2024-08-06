@@ -1,0 +1,28 @@
+project:
+  title: "Democracy and dominant party regimes in Africa: a comparative analysis"
+  output-dir: _products
+  execute-dir: project
+  pre-render: 
+    - utilities/check_packages.R      # install required packages
+    - utilities/remove_artifacts.ts   # remove previously constructed files
+  render:
+    # if analysis is split into multiple docs, add them here
+    - analysis/data_building/data_building.qmd
+
+author:
+  - name: Stepan Polikanov
+    orcid: 0000-0002-2329-2750
+    email: splknv.public@gmail.com
+    attributes:
+      corresponding: true
+    affiliations:
+      - id: uc3m
+        name: Universidad Carlos III de Madrid
+        department: Social Sciences
+  
+execute: 
+  freeze: false
+  
+editor: source
+
+

@@ -1,0 +1,13 @@
+---
+title: "Data Building"
+format: pdf
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+library(here)
+source(here("utilities", "check_packages.R"))
+source(here("utilities", "functions.R"))
+```

@@ -1,0 +1,15 @@
+{
+  "hash": "19c43406f5bd3a0a25595646e85f3bf6",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Data Building\"\nformat: pdf\n---\n\n\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": null,
+    "postProcess": false
+  }
+}
