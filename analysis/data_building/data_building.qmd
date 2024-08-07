@@ -1,6 +1,22 @@
 ---
 title: "Data Building"
-format: pdf
+format: 
+  pdf:
+    fig-pos: "H"
+    fontsize: 11pt
+    highlight-style: kate
+    include-in-header:
+      - text: |
+          \addtokomafont{disposition}{\rmfamily} 
+          \AddToHook{env/Highlighting/begin}{\scriptsize} 
+          \usepackage{float} 
+          \usepackage[backend = biber, style = apa]{biblatex}
+          \addbibresource{../../bibliography/domparty.bib}
+execute: 
+  echo: true
+  warning: false
+  error: false
+  message: false
 ---
 
 ```{r}
@@ -10,4 +26,48 @@ format: pdf
 library(here)
 source(here("utilities", "check_packages.R"))
 source(here("utilities", "functions.R"))
+
+theme_set(theme_minimal())
 ```
+
+I start with reading in the data.
+
+```{r}
+#| label: read data
+
+party_class <- read_excel(here("data", "data_raw", "partyreg.xlsx"))
+colonial <- read_csv(here("data", "data_raw", "COLDAT_colonies.csv"))
+```
+
+I construct dummies for the colonial legacies of sub-Saharan African countries from the Colonial Dates dataset \parencite{becker_colonial_2019}.
+
+```{r}
+#| label: modify colonial contiguity data
+
+col_legacy <- colonial |> 
+  mutate(ccodecow = countryname(country, destination = "cown")) |> 
+  filter(ccodecow %in% party_class$ccodecow) |> 
+  reframe(ccodecow, col.britain, col.france,
+          col.other = if_else((col.britain == 0 & col.france == 0)
+                              & (col.belgium == 1 | col.germany == 1
+                                 | col.italy == 1 | col.netherlands == 1
+                                 | col.portugal == 1 | col.spain == 1), 1, 0),
+          col.none = if_else(col.other == 0 & col.britain == 0
+                             & col.france == 0, 1, 0),
+          col.type = case_when(col.britain == 1 & col.france == 0 
+                               & col.other == 0 ~ "Britain",
+                               col.france == 1 & col.britain == 0 
+                               & col.other == 0 ~ "France",
+                               col.other == 1 & col.britain == 0 
+                               & col.france == 0 ~ "Other",
+                               col.none == 1 ~ "None",
+                               .default = "Mixed"))
+
+ggplot(col_legacy, aes(x = col.type)) +
+  geom_bar() +
+  labs(title = "Colonial Legacies of Sub-Saharan African Countries",
+       x = "\nColonial Power",
+       y = "Number of Countries")
+```
+
+We get that some countries have colonial histories with both Britain and France, etiher of those a different metropoly, or were not colonized at all.

@@ -7,12 +7,16 @@
 # add new packages to the chain here
 packages = c(
   "here", 
-  "tidyverse"
+  "tidyverse",
+  "countrycode",
+  "readxl",
+  "sp"
 )
 
 package.check <- lapply(packages, FUN = function(x) {
   if (!require(x, character.only = TRUE)) {
     renv::install(x, dependencies = "all")
-    library(x, character.only = TRUE)
+    library(x)
   }
 })
+

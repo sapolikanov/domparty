@@ -12,11 +12,11 @@ if (!Deno.env.get("QUARTO_PROJECT_RENDER_ALL")) {
 
 //remove and replace the data_constructed directory
 try {
-  Deno.removeSync("data/data_constructed", { recursive: true });
-  Deno.mkdir("data/data_constructed");
+  Deno.removeSync("data/data_built", { recursive: true });
+  Deno.mkdir("data/data_built");
 } catch(error) {
   //directory does not exist
-  Deno.mkdir("data/data_constructed");
+  Deno.mkdir("data/data_built");
 }
 
 //remove the _products directory
