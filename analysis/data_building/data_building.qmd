@@ -37,12 +37,20 @@ I start with reading in the data.
 
 party_class <- read_excel(here("data", "data_raw", "partyreg.xlsx"))
 colonial <- read_csv(here("data", "data_raw", "COLDAT_colonies.csv"))
+vdem <- readRDS(here("data", "data_raw", "V-Dem-CY-Full+Others-v10.rds"))
+epr <- read_csv(here("data", "data_raw", "EPR.csv"))
+```
+
+```{r}
+#| label: create countryyear pair vector from hand-coded data
+
+cy <- str_c(party_class$ccodecow, party_class$year, sep = "_")
 ```
 
 I construct dummies for the colonial legacies of sub-Saharan African countries from the Colonial Dates dataset \parencite{becker_colonial_2019}.
 
 ```{r}
-#| label: modify colonial contiguity data
+#| label: modify colonial dates data
 
 col_legacy <- colonial |> 
   mutate(ccodecow = countryname(country, destination = "cown")) |> 
@@ -70,4 +78,47 @@ ggplot(col_legacy, aes(x = col.type)) +
        y = "Number of Countries")
 ```
 
-We get that some countries have colonial histories with both Britain and France, etiher of those a different metropoly, or were not colonized at all.
+The result is that some countries had colonial histories with both Britain and France, either of those a different metropole, or were not colonized at all.
+
+Party system institutionalization data comes from V-Dem v10 (march 2020) \parencite{coppedge_v-dem_2020}. 
+
+```{r}
+#| label: modify PSI data
+
+psi <- vdem |> 
+  select(country_name, ccodecow = COWcode, year, v2xps_party) |> 
+  mutate(v2xps_party_mean = if_else(is.na(v2xps_party)
+                                    & str_c(ccodecow, year, sep = "_") %in% cy,
+                                    round(mean(v2xps_party[year >= 2013 & year <= 2018], 
+                                         na.rm = T), 3), v2xps_party),
+         v2xos_party_next = if_else(is.na(v2xps_party)
+                                    & str_c(ccodecow, year, sep = "_") %in% cy,
+                                    lead(v2xps_party, 1), v2xps_party)) |> 
+  filter(str_c(ccodecow, year, sep = "_") %in% cy)
+```
+
+There are two instances when the PSI index is not recorded by V-Dem in the delineated geographical and temporal scope: Mali in 2013 and Guinea in 2013. I fill these with the mean of the PSI index for these countries for the years 2013-2018. The decision is aimed at minimizing missing values in an already very small sample. This may be suboptimal, so I also provide a sensitivity analysis to this choice. I compare the mean solution with imputing the next value or discarding the observations altogether.
+
+```{r}
+#| label: modify EPR data
+
+elf <- epr |> 
+  mutate(ccodecow = countryname(statename, destination = "cown")) |>
+  group_by(statename, ccodecow, from, to) |> 
+  summarize(elf = 1 - sum(size^2)) |> 
+  mutate(year = list(seq(from, to))) |> 
+  unnest(year) |> 
+  ungroup() |> 
+  select(-from, -to) |> 
+  full_join(select(party_class, ccodecow, year)) |> 
+  arrange(ccodecow, year) |> 
+  group_by(ccodecow) |> 
+  mutate(elf_fill = if_else(is.na(elf), lag(elf, 1), elf)) |> 
+  right_join(select(party_class, ccodecow, year))
+  
+
+```
+
+
+\printbibliography
+
