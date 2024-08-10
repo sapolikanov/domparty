@@ -4,7 +4,9 @@ format:
   pdf:
     fig-pos: "H"
     fontsize: 11pt
-    highlight-style: kate
+    highlight-style: breezedark
+    fig-width: 7
+    fig-height: 5
     include-in-header:
       - text: |
           \addtokomafont{disposition}{\rmfamily} 
@@ -42,6 +44,8 @@ epr <- read_csv(here("data", "data_raw", "EPR.csv"))
 dpi <- read_dta(here("data", "data_raw", "DPI2020.dta"))
 ```
 
+Create a character vector of country-year pairs for subsetting.
+
 ```{r}
 #| label: create countryyear pair vector from hand-coded data
 
@@ -73,13 +77,19 @@ col_legacy <- colonial |>
                                .default = "Mixed"))
 
 ggplot(col_legacy, aes(x = col.type)) +
-  geom_bar(fill = "grey60") +
+  geom_bar(fill = "grey60", width = 0.75) +
+  geom_text(aes(label = after_stat(count)), stat = "count", vjust = 2) + 
   labs(title = "Colonial Legacies of Sub-Saharan African Countries",
+       subtitle = paste0("N = ", sum(!is.na(col_legacy$col.type)), " of ", 
+                         length(col_legacy$col.type), 
+                         " possible countries in the sample."),
+       caption = 
+         "\nsource: Colonial Dates Dataset (COLDAT), Becker et al. (2019)",
        x = "\nColonial Power",
-       y = "Number of Countries")
+       y = "Number of Countries\n")
 ```
 
-The result is that some countries had colonial histories with both Britain and France, either of those a different metropole, or were not colonized at all.
+The result is that some countries had colonial histories with both Britain and France, either of those, a different metropole, or were not colonized at all.
 
 Party system institutionalization data comes from V-Dem v10 (march 2020) \parencite{coppedge_v-dem_2020}. 
 
@@ -90,7 +100,8 @@ psi <- vdem |>
   select(country_name, ccodecow = COWcode, year, v2xps_party) |> 
   mutate(v2xps_party_mean = if_else(is.na(v2xps_party)
                                     & str_c(ccodecow, year, sep = "_") %in% cy,
-                                    round(mean(v2xps_party[year >= 2013 & year <= 2018], 
+                                    round(mean(v2xps_party[year >= 2013
+                                                           & year <= 2018], 
                                          na.rm = T), 3), v2xps_party),
          v2xos_party_next = if_else(is.na(v2xps_party)
                                     & str_c(ccodecow, year, sep = "_") %in% cy,
@@ -100,13 +111,29 @@ psi <- vdem |>
 ggplot(psi, aes(x = v2xps_party_mean)) +
   geom_density() +
   geom_dotplot(fill = "grey60", binwidth = 0.03) +
-  labs(title = "Party System Institutionalization in Sub-Saharan African Countries\n",
+  labs(title = 
+         "Party System Institutionalization in Sub-Saharan African Countries",
+       caption = "\nsource: V-Dem v10 (march 2020), Coppedge et al. (2020)",
+       subtitle = paste0("N = ", sum(!is.na(psi$v2xps_party_mean)), " of ", 
+                         length(psi$v2xps_party_mean), 
+                         " possible countries in the sample. For ",
+                         sum(!is.na(psi$v2xps_party_mean))
+                         - sum(!is.na(psi$v2xps_party)),
+                         " countries with missing PSI for the\n",
+                         "election year are imputed with the mean of the PSI ",
+                         "index for 2013-2018.\n"),
        x = "\nPSI Index",
        y = "Density\n")
-  
 ```
 
 There are two instances when the PSI index is not recorded by V-Dem in the delineated geographical and temporal scope: Mali in 2013 and Guinea in 2013. I fill these with the mean of the PSI index for these countries for the years 2013-2018. The decision is aimed at minimizing missing values in an already very small sample. This may be suboptimal, so I also provide a sensitivity analysis to this choice. I compare the mean solution with imputing the next value or discarding the observations altogether.
+
+I use Ethnic Power Relations core dataset to construct a measure of ethno-linguistic
+fragmentation (ELF) \parencite{vogt_integrating_2015}. The ELF index is a measure of the probability that two randomly selected individuals in a country belong to different ethno-linguistic groups. The calculation is straightforward: 
+
+$$ELF_i = 1 - \sum_{j = 1}^{K}s_j^2$$
+
+where for to get the ELF index for country $i$, I deduct from 1 the sum of squared proportions $s$ of ethnic groups $j$ across $K$ groups in a country.
 
 ```{r}
 #| label: modify EPR data
@@ -133,7 +160,8 @@ ggplot(elf, aes(x = elf_fill)) +
        subtitle = paste0("N = ", sum(!is.na(elf$elf_fill)), ", of ", 
                          length(elf$elf_fill), " possible countries in the sample.\nFor ", 
                          sum(!is.na(elf$elf_fill)) - sum(!is.na(elf$elf)),
-                         " countries the ELF index for 2018 is imputed with the 2017 value"),
+                         " countries the ELF index for 2018 is imputed with the 2017 value.\n"),
+       caption = "\nsource: Ethnic Power Relations Dataset (EPR), Vogt et al. (2015)",
        x = "\nELF Index",
        y = "Density\n")
 ```
@@ -143,8 +171,29 @@ ggplot(elf, aes(x = elf_fill)) +
 
 housesys <- dpi |> 
   select(countryname, ifs, year, housesys) |> 
-  mutate(ccodecow = case_when(is.na(countryname(countryname, 
-                                                destination = "cown"))))
+  mutate(ccodecow_1 = countrycode(ifs, origin = "iso3c", destination = "cown"),
+         ccodecow_2 = countryname(countryname, destination = "cown"),
+         ccodecow = case_when(ccodecow_1 == ccodecow_2 ~ ccodecow_1,
+                              is.na(ccodecow_1) ~ ccodecow_2,
+                              is.na(ccodecow_2) ~ ccodecow_1,
+                              !is.na(ccodecow_1) 
+                              & !is.na(ccodecow_2) ~ ccodecow_1),
+         housesys = factor(if_else(housesys == -999, NA, housesys),
+                           levels = c(0, 1), 
+                           labels = c("Proportional",
+                                      "Plural"))) |> 
+  filter(str_c(ccodecow, year, sep = "_") %in% cy) |> 
+  right_join(select(party_class, ccodecow, year))
+
+ggplot(housesys, aes(x = housesys)) +
+  geom_bar(fill = "grey60", width = 0.75) + 
+  labs(title = "Type of Political Institutions in Sub-Saharan African Countries",
+       subtitle = paste0("N = ", sum(!is.na(housesys$housesys)), " of ", 
+                         length(housesys$housesys), 
+                         " possible countries in the sample.\n"),
+       caption = "\nsource: Database of Political Institutions (DPI), Arel-Bundock (2020)",
+       x = "\nType of Political Institutions",
+       y = "Number of countries\n")
 ```
 
 
