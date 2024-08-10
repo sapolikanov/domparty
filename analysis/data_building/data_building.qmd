@@ -39,6 +39,7 @@ party_class <- read_excel(here("data", "data_raw", "partyreg.xlsx"))
 colonial <- read_csv(here("data", "data_raw", "COLDAT_colonies.csv"))
 vdem <- readRDS(here("data", "data_raw", "V-Dem-CY-Full+Others-v10.rds"))
 epr <- read_csv(here("data", "data_raw", "EPR.csv"))
+dpi <- read_dta(here("data", "data_raw", "DPI2020.dta"))
 ```
 
 ```{r}
@@ -53,7 +54,7 @@ I construct dummies for the colonial legacies of sub-Saharan African countries f
 #| label: modify colonial dates data
 
 col_legacy <- colonial |> 
-  mutate(ccodecow = countryname(country, destination = "cown")) |> 
+  mutate(ccodecow = countryname(country, destination = "cown", warn = F)) |> 
   filter(ccodecow %in% party_class$ccodecow) |> 
   reframe(ccodecow, col.britain, col.france,
           col.other = if_else((col.britain == 0 & col.france == 0)
@@ -72,7 +73,7 @@ col_legacy <- colonial |>
                                .default = "Mixed"))
 
 ggplot(col_legacy, aes(x = col.type)) +
-  geom_bar() +
+  geom_bar(fill = "grey60") +
   labs(title = "Colonial Legacies of Sub-Saharan African Countries",
        x = "\nColonial Power",
        y = "Number of Countries")
@@ -95,6 +96,14 @@ psi <- vdem |>
                                     & str_c(ccodecow, year, sep = "_") %in% cy,
                                     lead(v2xps_party, 1), v2xps_party)) |> 
   filter(str_c(ccodecow, year, sep = "_") %in% cy)
+
+ggplot(psi, aes(x = v2xps_party_mean)) +
+  geom_density() +
+  geom_dotplot(fill = "grey60", binwidth = 0.03) +
+  labs(title = "Party System Institutionalization in Sub-Saharan African Countries\n",
+       x = "\nPSI Index",
+       y = "Density\n")
+  
 ```
 
 There are two instances when the PSI index is not recorded by V-Dem in the delineated geographical and temporal scope: Mali in 2013 and Guinea in 2013. I fill these with the mean of the PSI index for these countries for the years 2013-2018. The decision is aimed at minimizing missing values in an already very small sample. This may be suboptimal, so I also provide a sensitivity analysis to this choice. I compare the mean solution with imputing the next value or discarding the observations altogether.
@@ -114,9 +123,28 @@ elf <- epr |>
   arrange(ccodecow, year) |> 
   group_by(ccodecow) |> 
   mutate(elf_fill = if_else(is.na(elf), lag(elf, 1), elf)) |> 
-  right_join(select(party_class, ccodecow, year))
-  
+  right_join(select(party_class, ccodecow, year)) |> 
+  ungroup()
 
+ggplot(elf, aes(x = elf_fill)) +
+  geom_density() +
+  geom_dotplot(fill = "grey60", binwidth = 0.04) +
+  labs(title = "Ethno-linguistic fragmentation in Sub-Saharan African Countries",
+       subtitle = paste0("N = ", sum(!is.na(elf$elf_fill)), ", of ", 
+                         length(elf$elf_fill), " possible countries in the sample.\nFor ", 
+                         sum(!is.na(elf$elf_fill)) - sum(!is.na(elf$elf)),
+                         " countries the ELF index for 2018 is imputed with the 2017 value"),
+       x = "\nELF Index",
+       y = "Density\n")
+```
+
+```{r}
+#| label: modify political institutions data
+
+housesys <- dpi |> 
+  select(countryname, ifs, year, housesys) |> 
+  mutate(ccodecow = case_when(is.na(countryname(countryname, 
+                                                destination = "cown"))))
 ```
 
 
