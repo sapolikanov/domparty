@@ -42,6 +42,9 @@ colonial <- read_csv(here("data", "data_raw", "COLDAT_colonies.csv"))
 vdem <- readRDS(here("data", "data_raw", "V-Dem-CY-Full+Others-v10.rds"))
 epr <- read_csv(here("data", "data_raw", "EPR.csv"))
 dpi <- read_dta(here("data", "data_raw", "DPI2020.dta"))
+vparty <- read_rds(here("data", "data_raw", "V-Dem-CPD-Party-V2.rds"))
+wb_oil <- read_csv(here("data", "data_raw", 
+                        "API_NY.GDP.PETR.RT.ZS_DS2_en_csv_v2_2446738.csv"))
 ```
 
 Create a character vector of country-year pairs for subsetting.
@@ -128,6 +131,26 @@ ggplot(psi, aes(x = v2xps_party_mean)) +
 
 There are two instances when the PSI index is not recorded by V-Dem in the delineated geographical and temporal scope: Mali in 2013 and Guinea in 2013. I fill these with the mean of the PSI index for these countries for the years 2013-2018. The decision is aimed at minimizing missing values in an already very small sample. This may be suboptimal, so I also provide a sensitivity analysis to this choice. I compare the mean solution with imputing the next value or discarding the observations altogether.
 
+The data on the level of democracy also comes from V-Dem v10 \parencite{coppedge_v-dem_2020}. I use the V-Dem polyarchy measure.
+
+```{r}
+dem <- vdem |> 
+  select(ccodecow = COWcode, year, v2x_polyarchy) |> 
+  filter(str_c(ccodecow, year, sep = "_") %in% cy)
+
+ggplot(dem, aes(x = v2x_polyarchy)) +
+  geom_density() +
+  geom_dotplot(fill = "grey60", binwidth = 0.03) +
+  labs(title = 
+         "Democracy in Sub-Saharan African Countries",
+       caption = "\nsource: V-Dem v10 (march 2020), Coppedge et al. (2020)",
+       subtitle = paste0("N = ", sum(!is.na(dem$v2x_polyarchy)), " of ", 
+                         length(dem$v2x_polyarchy), 
+                         " possible countries in the sample.\n"),
+       x = "\nPolyarchy Index",
+       y = "Density\n")
+```
+
 I use Ethnic Power Relations core dataset to construct a measure of ethno-linguistic
 fragmentation (ELF) \parencite{vogt_integrating_2015}. The ELF index is a measure of the probability that two randomly selected individuals in a country belong to different ethno-linguistic groups. The calculation is straightforward: 
 
@@ -166,6 +189,8 @@ ggplot(elf, aes(x = elf_fill)) +
        y = "Density\n")
 ```
 
+Data on the electoral rules for the lower house of the national legislature comes from the Database of Political Institutions (DPI) \parencite{patrick_new_2010}. I focus on the type of electoral system used in the most recent election year. The data is coded as 0 for proportional representation and 1 for plurality.
+
 ```{r}
 #| label: modify political institutions data
 
@@ -194,6 +219,39 @@ ggplot(housesys, aes(x = housesys)) +
        caption = "\nsource: Database of Political Institutions (DPI), Arel-Bundock (2020)",
        x = "\nType of Political Institutions",
        y = "Number of countries\n")
+```
+
+There are around twice as many countries with plurality as with with proportional representation in the sample. For 4 countries data is unavailable. For Sao Tome and Principe and the Seychelles, the project does not collect data, and for Guinea and Sudan, the data is missing in source. 
+
+The data on effective number of parties comes from the V-Party dataseet.
+
+```{r}
+#| label: modify enp data
+
+enp <- vparty |> 
+  select(country_name, year, ccodecow = COWcode, v2paseatshare,
+         v2pavote) |>
+  filter(str_c(ccodecow, year, sep = "_") %in% cy) |>
+  mutate(across(c(v2paseatshare, v2pavote), ~ ./100)) |>
+  group_by(ccodecow, year) |> 
+  summarize(enpp = 1/sum(v2paseatshare^2, na.rm = T),
+            enpv = 1/sum(v2pavote^2, na.rm = T),
+            enpv = if_else(is.infinite(enpv), NA, enpv),
+            .groups = "drop") |>
+  right_join(select(party_class, ccodecow, year))
+```
+
+```{r}
+#| label: modify world bank data
+
+oil <- wb_oil |> 
+  pivot_longer(cols = -c("Country Name", "Country Code", "Indicator Name", 
+                         "Indicator Code"), 
+               names_to = "year", values_to = "oil_rent_perc_gdp") |> 
+  mutate(ccodecow = countryname(`Country Name`, 
+                                destination = "cown"),
+         oil_rent_dummy = if_else(oil_rent_perc_gdp != 0, 1, 0)) |> 
+  filter(str_c(ccodecow, year, sep = "_") %in% cy) 
 ```
 
 
