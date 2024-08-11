@@ -223,7 +223,15 @@ ggplot(housesys, aes(x = housesys)) +
 
 There are around twice as many countries with plurality as with with proportional representation in the sample. For 4 countries data is unavailable. For Sao Tome and Principe and the Seychelles, the project does not collect data, and for Guinea and Sudan, the data is missing in source. 
 
-The data on effective number of parties comes from the V-Party dataseet.
+The data on effective number of parties comes from the V-Party dataset. I calculate both ENPP (effective number of parliamentary parties) and ENEP (effective number of presidential candidates) indices. The ENPP index is calculated as:
+
+$$ENPP_i = \frac{1}{\sum_{p = 1}^{L}ss_p^2}$$
+
+which is the inverse of the sum of squared seat shares of parties in the lower house of the national legislature and where $ss_p$ is the seat share of party $p$. The ENEP index is calculated as: 
+
+$$ENEP_i = \frac{1}{\sum_{p = 1}^{L}sv_p^2}$$
+
+which is the inverse of the sum of squared vote shares of presidential candidates, with $sv_p$ being that share.
 
 ```{r}
 #| label: modify enp data
@@ -235,11 +243,35 @@ enp <- vparty |>
   mutate(across(c(v2paseatshare, v2pavote), ~ ./100)) |>
   group_by(ccodecow, year) |> 
   summarize(enpp = 1/sum(v2paseatshare^2, na.rm = T),
-            enpv = 1/sum(v2pavote^2, na.rm = T),
-            enpv = if_else(is.infinite(enpv), NA, enpv),
+            enep = 1/sum(v2pavote^2, na.rm = T),
+            enep = if_else(is.infinite(enep), NA, enep),
             .groups = "drop") |>
   right_join(select(party_class, ccodecow, year))
+
+enp |> 
+  rename(ENPP = enpp, ENEP = enep) |>
+  pivot_longer(cols = c("ENPP", "ENEP")) |> 
+  ggplot(aes(x = value, color = name)) +
+    geom_density() +
+    geom_dotplot(aes(fill = name), binwidth = 0.2, binpositions = "all", alpha = 0.75) +
+    scale_fill_manual(values = c("#00224D", "#FF204E")) +
+    scale_color_manual(values = c("#00224D", "#FF204E")) +
+    labs(title = "Effective Number of Parties in Sub-Saharan African Countries",
+         subtitle = paste0("ENPP: N = ", sum(!is.na(enp$enpp)), 
+                           "\nENEP: N = ", sum(!is.na(enp$enep)), 
+                           " of ", 
+                           length(enp$enpp), 
+                           " possible countries in the sample.\n"),
+         caption = "\nsource: V-Party, Coppedge et al. (2020)",
+         fill = "Index",
+         color = "Index",
+         x = "\nEffective Number of Parties",
+         y = "Density\n")
 ```
+
+The ENPP index is calculated for each country-year pair in the sample, but for the ENEP, there are a multiple missing values.
+
+Data on oil rents as a percentage of GDP comes from the World Bank \parencite{world_bank_world_2020}. I construct a dummy variable for the presence of oil rents in a country-year pair.
 
 ```{r}
 #| label: modify world bank data
