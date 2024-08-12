@@ -189,7 +189,7 @@ ggplot(elf, aes(x = elf_fill)) +
        y = "Density\n")
 ```
 
-Data on the electoral rules for the lower house of the national legislature comes from the Database of Political Institutions (DPI) \parencite{patrick_new_2010}. I focus on the type of electoral system used in the most recent election year. The data is coded as 0 for proportional representation and 1 for plurality.
+Data on the electoral rules for the lower house of the national legislature comes from the Database of Political Institutions (DPI) \parencite{beck_new_2010}. I focus on the type of electoral system used in the most recent election year. The data is coded as 0 for proportional representation and 1 for plurality.
 
 ```{r}
 #| label: modify political institutions data
@@ -235,6 +235,7 @@ which is the inverse of the sum of squared vote shares of presidential candidate
 
 ```{r}
 #| label: modify enp data
+#| fig-width: 8.5
 
 enp <- vparty |> 
   select(country_name, year, ccodecow = COWcode, v2paseatshare,
@@ -248,30 +249,35 @@ enp <- vparty |>
             .groups = "drop") |>
   right_join(select(party_class, ccodecow, year))
 
-enp |> 
-  rename(ENPP = enpp, ENEP = enep) |>
-  pivot_longer(cols = c("ENPP", "ENEP")) |> 
-  ggplot(aes(x = value, color = name)) +
-    geom_density() +
-    geom_dotplot(aes(fill = name), binwidth = 0.2, binpositions = "all", alpha = 0.75) +
-    scale_fill_manual(values = c("#00224D", "#FF204E")) +
-    scale_color_manual(values = c("#00224D", "#FF204E")) +
-    labs(title = "Effective Number of Parties in Sub-Saharan African Countries",
-         subtitle = paste0("ENPP: N = ", sum(!is.na(enp$enpp)), 
-                           "\nENEP: N = ", sum(!is.na(enp$enep)), 
-                           " of ", 
-                           length(enp$enpp), 
-                           " possible countries in the sample.\n"),
-         caption = "\nsource: V-Party, Coppedge et al. (2020)",
-         fill = "Index",
-         color = "Index",
-         x = "\nEffective Number of Parties",
-         y = "Density\n")
+enp_graph_1 <- ggplot(enp, aes(x = enpp)) +
+  geom_density() +
+  geom_dotplot(fill = "grey60", binwidth = 0.03) +
+  labs(title = "Effective Number of Parliamentary Parties in\nSub-Saharan African Countries",
+       subtitle = paste0("N = ", sum(!is.na(enp$enpp)), " of ", 
+                         length(enp$enpp), 
+                         " possible countries in the sample.\n"),
+       caption = "\nsource: V-Party, Coppedge et al. (2020)",
+       x = "\nEffective Number of Parliamentary Parties",
+       y = "Density\n")
+
+enp_graph_2 <- ggplot(enp, aes(x = enep)) +
+  geom_density() +
+  geom_dotplot(fill = "grey60", binwidth = 0.03) +
+  labs(title = "Effective Number of Electoral Parties\nin Sub-Saharan African Countries",
+       subtitle = paste0("N = ", sum(!is.na(enp$enep)), " of ", 
+                         length(enp$enep), 
+                         " possible countries in the sample.\n"),
+       caption = "\nsource: V-Party, Coppedge et al. (2020)",
+       x = "\nEffective Number of Electoral Parties",
+       y = "Density\n")
+
+enp_graph_1 + enp_graph_2 + plot_layout(guides = 'collect',
+                                        axes = "collect")
 ```
 
 The ENPP index is calculated for each country-year pair in the sample, but for the ENEP, there are a multiple missing values.
 
-Data on oil rents as a percentage of GDP comes from the World Bank \parencite{world_bank_world_2020}. I construct a dummy variable for the presence of oil rents in a country-year pair.
+Data on oil rents as a percentage of GDP comes from the World Bank \parencite{world_bank_oil_2020}. I construct a dummy variable for the presence of oil rents in a country-year pair.
 
 ```{r}
 #| label: modify world bank data
@@ -282,10 +288,99 @@ oil <- wb_oil |>
                names_to = "year", values_to = "oil_rent_perc_gdp") |> 
   mutate(ccodecow = countryname(`Country Name`, 
                                 destination = "cown"),
-         oil_rent_dummy = if_else(oil_rent_perc_gdp != 0, 1, 0)) |> 
+         oil_rent_dummy = factor(if_else(oil_rent_perc_gdp != 0, 1, 0),
+                                 levels = c(0, 1), 
+                                 labels = c("Equal to zero",
+                                            "Not equal to zero")),
+         year = as.numeric(year)) |> 
   filter(str_c(ccodecow, year, sep = "_") %in% cy) 
+
+oil_graph_1 <- ggplot(oil, aes(x = oil_rent_perc_gdp)) +
+  geom_density() +
+  geom_dotplot(fill = "grey60", binwidth = 0.03) +
+  labs(title = "Oil Rents as a Percentage of GDP\nin Sub-Saharan African Countries",
+       subtitle = paste0("N = ", sum(!is.na(oil$oil_rent_perc_gdp)), " of ", 
+                         length(oil$oil_rent_perc_gdp), 
+                         " possible countries in the sample.\n"),
+       caption = "\nsource: World Bank, World Development Indicators (2020)",
+       x = "\nOil Rents as a Percentage of GDP",
+       y = "Density\n")
+
+oil_graph_2 <- ggplot(oil, aes(x = oil_rent_dummy)) +
+  geom_bar(fill = "grey60", width = 0.75) + 
+  labs(title = "Presence of Oil Rents in\nSub-Saharan African Countries",
+       subtitle = paste0("N = ", sum(!is.na(oil$oil_rent_dummy)), " of ", 
+                         length(oil$oil_rent_dummy), 
+                         " possible countries in the sample.\n"),
+       caption = "\nsource: World Bank, World Development Indicators (2020)",
+       x = "\nPresence of Oil Rents",
+       y = "Number of countries\n")
+
+oil_graph_1 + oil_graph_2
 ```
 
+Since most of the countries in the sample do not export oil, I present both possible variables: the percentage of oil rents in GDP and a dummy variable for the presence of oil rents. Normally, a continuous measurement would be preferable, but the distribution is very skewed, hence the dummy variable seems to be a more elegant solution.
 
+The data for education also comes from the V-Dem dataset \parencite{coppedge_v-dem_2020}. The variable is the average years of education for individuals aged 15 and older.
+
+```{r}
+#| label: modify education data
+
+edu <- vdem |> 
+  select(country_name, ccodecow = COWcode, year, e_peaveduc) |> 
+  mutate(e_peaveduc_mean = if_else(is.na(e_peaveduc)
+                                    & str_c(ccodecow, year, sep = "_") %in% cy,
+                                    round(mean(e_peaveduc[year >= 2013
+                                                           & year <= 2018], 
+                                         na.rm = T), 3), e_peaveduc),
+         e_peaveduc_next = if_else(is.na(e_peaveduc)
+                                    & str_c(ccodecow, year, sep = "_") %in% cy,
+                                    lead(e_peaveduc, 1), e_peaveduc),
+         # Does not work
+         e_peaveduc_prev = if_else(is.na(e_peaveduc)
+                                    & str_c(ccodecow, year, sep = "_") %in% cy,
+                                    lag(e_peaveduc, 1), e_peaveduc)
+         # Does not work
+         ) |> 
+  filter(str_c(ccodecow, year, sep = "_") %in% cy) 
+  
+ggplot(edu, aes(x = e_peaveduc_mean)) +
+  geom_density() +
+  geom_dotplot(fill = "grey60", binwidth = 0.2) +
+  labs(title = "Education levels (15+ years old) in Sub-Saharan African Countries",
+       subtitle = paste0("N = ", sum(!is.na(edu$e_peaveduc_mean)), " of ", 
+                         length(edu$e_peaveduc_mean), 
+                         " possible countries in the sample. For ",
+                         sum(!is.na(edu$e_peaveduc_mean))
+                         - sum(!is.na(edu$e_peaveduc)),
+                         " countries with missing education for the\n",
+                         "election year are imputed with the mean of the education ",
+                         "variable for 2013-2018.\n"),
+       caption = "\nsource: V-Dem v10 (march 2020), Coppedge et al. (2020)",
+       x = "\nEducated after 15 years old",
+       y = "Density\n")
+```
+
+As with the PSI index, there are missing values for some of the specific country-years. I impute these with the mean of the education variable for the years 2013-2018. There is no alternative imputation, as imputing with a lag or a lead still does not alleviate the issue for the missing country-years.
+
+Lastly, I combine the data into a single dataset.
+
+```{r}
+#| label: combine data
+
+data_built <- party_class |> 
+  left_join(col_legacy) |> 
+  left_join(psi) |> 
+  left_join(dem) |> 
+  left_join(elf) |> 
+  left_join(housesys) |> 
+  left_join(enp) |> 
+  left_join(oil) |> 
+  left_join(edu) 
+
+write_rds(data_built, here("data", "data_built", "data.built.rds"))
+```
+
+\newpage
 \printbibliography
 
