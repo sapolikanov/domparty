@@ -8,7 +8,8 @@
 packages = c(
   "here", "readxl", "haven", 
   "tidyverse", "countrycode",
-  "patchwork"
+  "patchwork", "finalfit",
+  "labelled"
 )
 
 package.check <- lapply(packages, FUN = function(x) {

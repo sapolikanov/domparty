@@ -1,5 +1,6 @@
 ---
 title: "Data Building"
+subtitle: "Project: Dominant Party Regimes in Sub-Saharan Africa"
 format: 
   pdf:
     fig-pos: "H"
@@ -20,6 +21,10 @@ execute:
   error: false
   message: false
 ---
+
+This file serves as a research notebook, detailing sequential data building steps for the project. It aims to provide a transparent view of coding practices, analytical decisions and inherent data limitations.
+
+I first describe the building of key explanatory variables and then the controls.
 
 ```{r}
 #| label: setup
@@ -92,12 +97,14 @@ ggplot(col_legacy, aes(x = col.type)) +
        y = "Number of Countries\n")
 ```
 
-The result is that some countries had colonial histories with both Britain and France, either of those, a different metropole, or were not colonized at all.
+The result is that some countries had colonial histories with both Britain and France, either of those, a different metropole, or were not colonized at all. 
+
+The variable is not ideal: one obvious issue is the three "misc" categories, with countries being either under both French and British rule, not colonized or under control of other colonial powers. The original paper collapsed these categories into a single one, but the experience of "trading hands" of different powers is likely to be extremely different from not being colonized at all. I will keep the variable as is, but I will also provide a sensitivity analysis where I collapse the categories into a single one. The latter option allows us to zero in on the differences between the British and the French, which is of course the motivating factor between the variable.
 
 Party system institutionalization data comes from V-Dem v10 (march 2020) \parencite{coppedge_v-dem_2020}. 
 
 ```{r}
-#| label: modify PSI data
+#| label: modify vdem PSI data
 
 psi <- vdem |> 
   select(country_name, ccodecow = COWcode, year, v2xps_party) |> 
@@ -134,6 +141,8 @@ There are two instances when the PSI index is not recorded by V-Dem in the delin
 The data on the level of democracy also comes from V-Dem v10 \parencite{coppedge_v-dem_2020}. I use the V-Dem polyarchy measure.
 
 ```{r}
+#| label: modify vdem democracy data
+
 dem <- vdem |> 
   select(ccodecow = COWcode, year, v2x_polyarchy) |> 
   filter(str_c(ccodecow, year, sep = "_") %in% cy)
@@ -223,7 +232,7 @@ ggplot(housesys, aes(x = housesys)) +
 
 There are around twice as many countries with plurality as with with proportional representation in the sample. For 4 countries data is unavailable. For Sao Tome and Principe and the Seychelles, the project does not collect data, and for Guinea and Sudan, the data is missing in source. 
 
-The data on effective number of parties comes from the V-Party dataset. I calculate both ENPP (effective number of parliamentary parties) and ENEP (effective number of presidential candidates) indices. The ENPP index is calculated as:
+The data on effective number of parties comes from the V-Party dataset \parencite{lindberg_varieties_2022}. I calculate both ENPP (effective number of parliamentary parties) and ENEP (effective number of presidential candidates) indices. The ENPP index is calculated as:
 
 $$ENPP_i = \frac{1}{\sum_{p = 1}^{L}ss_p^2}$$
 
@@ -275,7 +284,7 @@ enp_graph_1 + enp_graph_2 + plot_layout(guides = 'collect',
                                         axes = "collect")
 ```
 
-The ENPP index is calculated for each country-year pair in the sample, but for the ENEP, there are a multiple missing values.
+The ENPP index is calculated for each country-year pair in the sample, but for the ENEP, there are a multiple missing values. The preferred measure to validate the analytical coding is therefore ENPP.
 
 Data on oil rents as a percentage of GDP comes from the World Bank \parencite{world_bank_oil_2020}. I construct a dummy variable for the presence of oil rents in a country-year pair.
 
@@ -379,6 +388,46 @@ data_built <- party_class |>
   left_join(edu) 
 
 write_rds(data_built, here("data", "data_built", "data.built.rds"))
+```
+
+As the data has missing values, I present a missing data matrix. 
+
+```{r}
+#| label: summary
+#| fig-width: 11
+#| fig-height: 6
+
+var_label(data_built) <- list(
+  country_name = "Country Name",
+  ccodecow = "Country Code",
+  year = "Year",
+  partyreg = "Dom Regime",
+  col.britain = "Colonized by Britain",
+  col.france = "Colonized by France",
+  col.other = "Colonized by Other",
+  col.none = "Not Colonized",
+  col.type = "Colonial Legacy",
+  v2xps_party_mean = "PSI (Mean)",
+  v2xos_party_next = "PSI (Next Year Imputed)",
+  v2x_polyarchy = "Democracy",
+  elf = "ELF",
+  elf_fill = "ELF (Imputed)",
+  housesys = "Electoral Rules",
+  enpp = "ENPP",
+  enep = "ENEP",
+  e_peaveduc_mean = "Education (Mean)",
+  e_peaveduc_next = "Education (Next Year Imputed)",
+  oil_rent_perc_gdp = "Oil Rents (%)",
+  oil_rent_dummy = "Oil Dummy"
+)
+
+missing_pairs(data_built, dependent = "partyreg", 
+              explanatory = c("housesys", "elf_fill", "v2xps_party_mean", 
+                              "col.type", "enpp", "v2x_polyarchy",
+                              "e_peaveduc_mean", "oil_rent_dummy")) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1),
+          strip.text.y = element_text(angle = 0))
+
 ```
 
 \newpage
