@@ -2,5 +2,8 @@
   "analysis/data_building/data_building.qmd": {
     "data_building.tex": "dc2caaa8",
     "data_building.html": "2322a72e"
+  },
+  "analysis/models/models.qmd": {
+    "models.tex": "d26d470b"
   }
 }

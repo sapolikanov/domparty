@@ -8,18 +8,10 @@ format:
     highlight-style: breezedark
     fig-width: 7
     fig-height: 5
-    include-in-header:
-      - text: |
-          \addtokomafont{disposition}{\rmfamily} 
-          \AddToHook{env/Highlighting/begin}{\scriptsize} 
-          \usepackage{float} 
-          \usepackage[backend = biber, style = apa]{biblatex}
-          \addbibresource{../../bibliography/domparty.bib}
+    include-in-header: 
+      - file: ../preamble.tex
 execute: 
   echo: true
-  warning: false
-  error: false
-  message: false
 ---
 
 This file serves as a research notebook, detailing sequential data building steps for the project. It aims to provide a transparent view of coding practices, analytical decisions and inherent data limitations.
@@ -385,17 +377,14 @@ data_built <- party_class |>
   left_join(housesys) |> 
   left_join(enp) |> 
   left_join(oil) |> 
-  left_join(edu) 
-
-write_rds(data_built, here("data", "data_built", "data.built.rds"))
-```
-
-As the data has missing values, I present a missing data matrix. 
-
-```{r}
-#| label: summary
-#| fig-width: 11
-#| fig-height: 6
+  left_join(edu) |> 
+  select(-statename, -countryname, -ifs, -ccodecow_1, -ccodecow_2, 
+         -`Country Name`, -`Country Code`, -`Indicator Name`, 
+         -`Indicator Code`, e_peaveduc_next, e_peaveduc_prev) |> 
+  mutate(party_reg = factor(partyreg, levels = 0:2, 
+                            labels = c("Not Dominant", 
+                                       "Autocratic Dominant", 
+                                       "Democratic Dominant")))
 
 var_label(data_built) <- list(
   country_name = "Country Name",
@@ -420,6 +409,16 @@ var_label(data_built) <- list(
   oil_rent_perc_gdp = "Oil Rents (%)",
   oil_rent_dummy = "Oil Dummy"
 )
+
+write_rds(data_built, here("data", "data_built", "data.built.rds"))
+```
+
+As the data has missing values, I present a missing data matrix. 
+
+```{r}
+#| label: missing data
+#| fig-width: 11
+#| fig-height: 6
 
 missing_pairs(data_built, dependent = "partyreg", 
               explanatory = c("housesys", "elf_fill", "v2xps_party_mean", 

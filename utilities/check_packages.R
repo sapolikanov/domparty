@@ -9,7 +9,8 @@ packages = c(
   "here", "readxl", "haven", 
   "tidyverse", "countrycode",
   "patchwork", "finalfit",
-  "labelled"
+  "labelled", "nnet",
+  "modelsummary"
 )
 
 package.check <- lapply(packages, FUN = function(x) {

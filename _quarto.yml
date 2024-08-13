@@ -8,6 +8,7 @@ project:
   render:
     # if analysis is split into multiple docs, add them here
     - analysis/data_building/data_building.qmd
+    - analysis/models/models.qmd
 
 author:
   - name: Stepan Polikanov
@@ -22,6 +23,9 @@ author:
   
 execute: 
   freeze: false
+  warning: false
+  error: false
+  message: false
   
 editor: source
 

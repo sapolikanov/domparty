@@ -1,0 +1,55 @@
+---
+title: "Models"
+subtitle: "Project: Dominant Party Regimes in Sub-Saharan Africa"
+format: 
+  pdf:
+    fig-pos: "H"
+    fontsize: 11pt
+    highlight-style: breezedark
+    fig-width: 7
+    fig-height: 5
+    include-in-header: 
+      - file: ../preamble.tex
+execute: 
+  echo: true
+---
+
+This file reports the modelling process and the associated analytic decisions. It also includes the results of sensitivity tests.
+
+```{r}
+#| label: setup
+#| include: false
+
+library(here)
+source(here("utilities", "check_packages.R"))
+source(here("utilities", "functions.R"))
+
+theme_set(theme_minimal())
+```
+
+Read in the data compiled in the *data_building.qmd* file.
+
+```{r}
+#| label: read in data
+
+data <- read_rds(here("data", "data_built", "data.built.rds"))
+```
+
+The main and only model in my original work was a multinomial logistic model. The main disadvantage of using this class of models in this context is that logistic models typically require more observations than linear models. Nevertheless, I start with a multinomial model to i) establish a baseline, ii) provide ground to validate the analytical coding of the dominant party regimes and iii) because there are not many alternative methods to analyze the data.
+
+I first use a preferred specification, with party system institutionalization and education variables imputed with the mean of 2013-2018 values for the country with missing data, ELF imputed with previous values for the country and oil rents variable presented as a dummy.
+
+```{r}
+#| label: multinomial model, prefered specification
+
+m1a <- multinom(party_reg ~ v2xps_party_mean + elf_fill + col.type
+               + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
+               data = data)
+
+m1b <- multinom(relevel(party_reg, ref = "Autocratic Dominant") ~ v2xps_party_mean + elf_fill + col.type
+               + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
+               data = data)
+
+modelsummary(list(m1a, m1b), stars = T, shape = term ~ response, coef_rename = T)
+```
+
