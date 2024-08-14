@@ -669,7 +669,7 @@
     },
     "datawizard": {
       "Package": "datawizard",
-      "Version": "0.10.0",
+      "Version": "0.12.2",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -678,7 +678,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "62d6ec10346d3302a1299e1c54641d83"
+      "Hash": "4070785c656b9ded5d0ed5db387a96d5"
     },
     "desc": {
       "Package": "desc",
@@ -1308,7 +1308,7 @@
     },
     "insight": {
       "Package": "insight",
-      "Version": "0.19.10",
+      "Version": "0.20.2",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -1317,7 +1317,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "c15a38c9655cba66f5f5537a14c1bef4"
+      "Hash": "74a0751aafb4d4bc140531e46deda4ab"
     },
     "ipred": {
       "Package": "ipred",

@@ -378,24 +378,26 @@ data_built <- party_class |>
   left_join(enp) |> 
   left_join(oil) |> 
   left_join(edu) |> 
-  select(-statename, -countryname, -ifs, -ccodecow_1, -ccodecow_2, 
-         -`Country Name`, -`Country Code`, -`Indicator Name`, 
-         -`Indicator Code`, e_peaveduc_next, e_peaveduc_prev) |> 
   mutate(party_reg = factor(partyreg, levels = 0:2, 
                             labels = c("Not Dominant", 
                                        "Autocratic Dominant", 
-                                       "Democratic Dominant")))
+                                       "Democratic Dominant")),
+         col_type = factor(col.type)) |> 
+  select(-statename, -countryname, -ifs, -ccodecow_1, -ccodecow_2, 
+         -`Country Name`, -`Country Code`, -`Indicator Name`, 
+         -`Indicator Code`, -e_peaveduc_next, -e_peaveduc_prev,
+         -partyreg, -col.type)
 
 var_label(data_built) <- list(
   country_name = "Country Name",
   ccodecow = "Country Code",
   year = "Year",
-  partyreg = "Dom Regime",
+  party_reg = "Dom Regime",
   col.britain = "Colonized by Britain",
   col.france = "Colonized by France",
   col.other = "Colonized by Other",
   col.none = "Not Colonized",
-  col.type = "Colonial Legacy",
+  col_type = "Colonial Legacy",
   v2xps_party_mean = "PSI (Mean)",
   v2xos_party_next = "PSI (Next Year Imputed)",
   v2x_polyarchy = "Democracy",
@@ -405,7 +407,6 @@ var_label(data_built) <- list(
   enpp = "ENPP",
   enep = "ENEP",
   e_peaveduc_mean = "Education (Mean)",
-  e_peaveduc_next = "Education (Next Year Imputed)",
   oil_rent_perc_gdp = "Oil Rents (%)",
   oil_rent_dummy = "Oil Dummy"
 )

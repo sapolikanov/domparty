@@ -10,7 +10,7 @@ packages = c(
   "tidyverse", "countrycode",
   "patchwork", "finalfit",
   "labelled", "nnet",
-  "modelsummary"
+  "modelsummary", "kableExtra"
 )
 
 package.check <- lapply(packages, FUN = function(x) {

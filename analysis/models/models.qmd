@@ -12,6 +12,8 @@ format:
       - file: ../preamble.tex
 execute: 
   echo: true
+  warning: false
+  message: false
 ---
 
 This file reports the modelling process and the associated analytic decisions. It also includes the results of sensitivity tests.
@@ -40,16 +42,30 @@ The main and only model in my original work was a multinomial logistic model. Th
 I first use a preferred specification, with party system institutionalization and education variables imputed with the mean of 2013-2018 values for the country with missing data, ELF imputed with previous values for the country and oil rents variable presented as a dummy.
 
 ```{r}
-#| label: multinomial model, prefered specification
+#| label: multinom-pref
+#| results: hide
 
-m1a <- multinom(party_reg ~ v2xps_party_mean + elf_fill + col.type
+m1a <- multinom(party_reg ~ v2xps_party_mean + elf_fill + col_type
                + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
                data = data)
 
-m1b <- multinom(relevel(party_reg, ref = "Autocratic Dominant") ~ v2xps_party_mean + elf_fill + col.type
-               + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
+m1b <- multinom(relevel(party_reg, ref = "Autocratic Dominant") 
+                ~ v2xps_party_mean + elf_fill + col_type
+                + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
                data = data)
-
-modelsummary(list(m1a, m1b), stars = T, shape = term ~ response, coef_rename = T)
 ```
 
+```{r}
+#| label: tbl-multinom-pref
+#| tbl-cap: Multinomial logistic model, preferred specification
+
+modelsummary(list("Ref: Non-dominant" = m1a, 
+                  "Ref: Autocratic Dominant" = m1b), stars = T, 
+             shape = term ~ response, coef_rename = T, 
+             output = "kableExtra") |> 
+  kable_styling(latex_options = c("scale_down"))
+```
+
+@tbl-multinom-pref reveals that there are not many valid inferences to be drawn from this way of modelling the data. While democracy scores are correlated with whether the dominant regime will be autocratic or democratic dominant, this is really not a significant contribution and is indeed to be expected. Other variables that reach conventional significance levels do so when I compare both dominant regime types with non-dominant regimes. This suggests that the model is too underpowered to capture differences between autocratic and democratic dominant regimes. 
+
+With this in mind, I try and confirm this with a continuous measure of party dominance: ENPP. 
