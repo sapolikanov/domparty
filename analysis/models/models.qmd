@@ -66,6 +66,71 @@ modelsummary(list("Ref: Non-dominant" = m1a,
   kable_styling(latex_options = c("scale_down"))
 ```
 
+```{r}
+#| label: fig-check-multinom-pref
+#| fig-height: 4
+
+check_model(m1a)
+```
+
 @tbl-multinom-pref reveals that there are not many valid inferences to be drawn from this way of modelling the data. While democracy scores are correlated with whether the dominant regime will be autocratic or democratic dominant, this is really not a significant contribution and is indeed to be expected. Other variables that reach conventional significance levels do so when I compare both dominant regime types with non-dominant regimes. This suggests that the model is too underpowered to capture differences between autocratic and democratic dominant regimes. 
 
 With this in mind, I try and confirm this with a continuous measure of party dominance: ENPP. 
+
+```{r}
+#| label: tbl-lm-enpp-pref
+#| tbl-cap: Linear model with ENPP as the dependent, all specifications
+
+m2 <- lm(enpp ~ v2xps_party_mean + elf_fill + col_type
+         + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
+         data = data)
+
+m2a <- lm(enpp ~ v2xps_party_next + elf_fill + col_type
+         + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
+         data = data)
+
+m2b <- lm(enpp ~ v2xps_party_mean + elf_fill + col_type_collapsed
+         + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
+         data = data)
+
+m2c <- lm(enpp ~ v2xps_party_mean + elf_fill + col_type
+         + housesys + v2x_polyarchy + oil_rent_perc_gdp + e_peaveduc_mean,
+         data = data)
+
+
+modelsummary(list("Preferred" = m2, "PSI next year imputed" = m2a, 
+                  "Oil rent in % of GDP" = m2b, "Colonial Legacy Collapsed" = m2c), 
+             stars = T, coef_rename = T, 
+             coef_map = c("(Intercept)", "PSI (Mean)", 
+                          "PSI (Next Year Imputed)", "ELF (Imputed)", 
+                          "Colonial Legacy [France]", 
+                          "Colonial Legacy [Mixed]", 
+                          "Colonial Legacy [None]", 
+                          "Colonial Legacy [Other]", 
+                          "Colonial Legacy (Collapsed) [France]",
+                          "Colonial Legacy (Collapsed) [Other]", 
+                          "Electoral Rules [Plural]", "Democracy",
+                          "Oil Dummy [Not equal to zero]",
+                          "Oil Rents (%)",
+                          "Education (Mean Imputed)"),
+             output = "kableExtra") |> 
+  kable_styling(latex_options = c("scale_down")) |> 
+  column_spec(column = 2:5, width = "2.5cm") 
+```
+
+\newpage
+
+```{r}
+#| label: fig-check-lm-enpp-pref
+#| fig-cap: Model diagnostics for the preferred linear model with ENPP as the dependent variable.
+#| fig-width: 9
+#| fig-height: 7
+
+check_model(m2)
+```
+
+When using ENPP as the dependent variable, linear models suggest similar results to those obtained using an analytical coding of the variable. While it is unsurprising, given the fact that party regime coding is based on the number of parties, it is nevertheless good to validate that approach. 
+
+Substantively, when using different operationalizations of variables, several patterns remain stable. Firstly, if anything, the preferred specification underestimates the effect of party system institutionalization on party dominance. When using different variables and especially when utilizing an alternative imputation method for missing values, the negative effect of party system institutionalization is more pronounced. 
+
+The interpretation for the latter is that the higher the party institutionalization score, the lower the expected number of parliamentary parties, that is, the higher the party dominance. This is in line with the theoretical expectations.

@@ -9,7 +9,8 @@ packages = c(
   "here", "readxl", "haven", 
   "tidyverse", "countrycode",
   "patchwork", "finalfit",
-  "labelled", "nnet",
+  "labelled", 
+  "nnet", "performance",
   "modelsummary", "kableExtra"
 )
 

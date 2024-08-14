@@ -74,7 +74,9 @@ col_legacy <- colonial |>
                                col.other == 1 & col.britain == 0 
                                & col.france == 0 ~ "Other",
                                col.none == 1 ~ "None",
-                               .default = "Mixed"))
+                               .default = "Mixed"),
+          col_type_collapsed = factor(if_else(col.type %in% c("Britain", "France"),
+                                       col.type, "Other")))
 
 ggplot(col_legacy, aes(x = col.type)) +
   geom_bar(fill = "grey60", width = 0.75) +
@@ -105,7 +107,7 @@ psi <- vdem |>
                                     round(mean(v2xps_party[year >= 2013
                                                            & year <= 2018], 
                                          na.rm = T), 3), v2xps_party),
-         v2xos_party_next = if_else(is.na(v2xps_party)
+         v2xps_party_next = if_else(is.na(v2xps_party)
                                     & str_c(ccodecow, year, sep = "_") %in% cy,
                                     lead(v2xps_party, 1), v2xps_party)) |> 
   filter(str_c(ccodecow, year, sep = "_") %in% cy)
@@ -398,15 +400,16 @@ var_label(data_built) <- list(
   col.other = "Colonized by Other",
   col.none = "Not Colonized",
   col_type = "Colonial Legacy",
+  col_type_collapsed = "Colonial Legacy (Collapsed)",
   v2xps_party_mean = "PSI (Mean)",
-  v2xos_party_next = "PSI (Next Year Imputed)",
+  v2xps_party_next = "PSI (Next Year Imputed)",
   v2x_polyarchy = "Democracy",
   elf = "ELF",
   elf_fill = "ELF (Imputed)",
   housesys = "Electoral Rules",
   enpp = "ENPP",
   enep = "ENEP",
-  e_peaveduc_mean = "Education (Mean)",
+  e_peaveduc_mean = "Education (Mean Imputed)",
   oil_rent_perc_gdp = "Oil Rents (%)",
   oil_rent_dummy = "Oil Dummy"
 )
@@ -421,9 +424,9 @@ As the data has missing values, I present a missing data matrix.
 #| fig-width: 11
 #| fig-height: 6
 
-missing_pairs(data_built, dependent = "partyreg", 
+missing_pairs(data_built, dependent = "party_reg", 
               explanatory = c("housesys", "elf_fill", "v2xps_party_mean", 
-                              "col.type", "enpp", "v2x_polyarchy",
+                              "col_type", "enpp", "v2x_polyarchy",
                               "e_peaveduc_mean", "oil_rent_dummy")) +
     theme(axis.text.x = element_text(angle = 90, hjust = 1),
           strip.text.y = element_text(angle = 0))
