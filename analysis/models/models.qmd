@@ -68,6 +68,7 @@ modelsummary(list("Ref: Non-dominant" = m1a,
 
 ```{r}
 #| label: fig-check-multinom-pref
+#| fig-cap: Model diagnostics for the preferred multinomial model.
 #| fig-height: 4
 
 check_model(m1a)
@@ -100,7 +101,7 @@ m2c <- lm(enpp ~ v2xps_party_mean + elf_fill + col_type
 
 modelsummary(list("Preferred" = m2, "PSI next year imputed" = m2a, 
                   "Oil rent in % of GDP" = m2b, "Colonial Legacy Collapsed" = m2c), 
-             stars = T, coef_rename = T, 
+             stars = T, coef_rename = T, vcov = "robust", 
              coef_map = c("(Intercept)", "PSI (Mean)", 
                           "PSI (Next Year Imputed)", "ELF (Imputed)", 
                           "Colonial Legacy [France]", 
@@ -134,3 +135,67 @@ When using ENPP as the dependent variable, linear models suggest similar results
 Substantively, when using different operationalizations of variables, several patterns remain stable. Firstly, if anything, the preferred specification underestimates the effect of party system institutionalization on party dominance. When using different variables and especially when utilizing an alternative imputation method for missing values, the negative effect of party system institutionalization is more pronounced. 
 
 The interpretation for the latter is that the higher the party institutionalization score, the lower the expected number of parliamentary parties, that is, the higher the party dominance. This is in line with the theoretical expectations.
+
+Since it appears that the modelling capabilities are restricted, I also evaluate a simpler logistic model, where the coding does not differentiate between autocratic- and democratic- dominant regimes, that is, the countries either are (1) dominant or (0) non-dominant regimes.
+
+```{r}
+#| label: tbl-logit-pref
+#| tbl-cap: Logistic model with party dominance dummy as the dependent, all specifications
+
+m3 <- glm(party_reg_dummy ~ v2xps_party_mean + elf_fill + col_type
+         + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
+         data = data, family = "binomial")
+
+m3a <- glm(party_reg_dummy ~ v2xps_party_next + elf_fill + col_type
+         + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
+         data = data, family = "binomial")
+
+m3b <- glm(party_reg_dummy ~ v2xps_party_mean + elf_fill + col_type_collapsed
+         + housesys + v2x_polyarchy + oil_rent_dummy + e_peaveduc_mean,
+         data = data, family = "binomial")
+
+m3c <- glm(party_reg_dummy ~ v2xps_party_mean + elf_fill + col_type
+         + housesys + v2x_polyarchy + oil_rent_perc_gdp + e_peaveduc_mean,
+         data = data, family = "binomial")
+
+modelsummary(list("Preferred" = m3, "PSI next year imputed" = m3a, 
+                  "Oil rent in % of GDP" = m3b, "Colonial Legacy Collapsed" = m3c), 
+             stars = T, coef_rename = T, vcov = "robust", 
+             coef_map = c("(Intercept)", "PSI (Mean)", 
+                          "PSI (Next Year Imputed)", "ELF (Imputed)", 
+                          "Colonial Legacy [France]", 
+                          "Colonial Legacy [Mixed]", 
+                          "Colonial Legacy [None]", 
+                          "Colonial Legacy [Other]", 
+                          "Colonial Legacy (Collapsed) [France]",
+                          "Colonial Legacy (Collapsed) [Other]", 
+                          "Electoral Rules [Plural]", "Democracy",
+                          "Oil Dummy [Not equal to zero]",
+                          "Oil Rents (%)",
+                          "Education (Mean Imputed)"),
+             output = "kableExtra") |> 
+  kable_styling(latex_options = c("scale_down")) |> 
+  column_spec(column = 2:5, width = "2.5cm") 
+
+```
+
+The results from a simplified categorization of party domination mostly reinforce previous results, but also produces unorthodox estimates for the effect of "mixed" colonial legacies. When the coefficients are exponentiated, those countries that have had such legacies, are 2543369 times more likely to be dominant than non-dominant. This is, no doubt a consequence of small sample size and a subsequent "small cells" problem. When I cross-reference the two variables, the issue is obvious: all three countries with a "mixed" colonial legacy are also autocratic dominant. 
+
+```{r}
+#| label: tbl-table-logit-pref
+#| tbl-cap: Cross-tabulation of party dominance and colonial legacies variables
+
+kable(table(data$party_reg_dummy, data$col_type))
+```
+
+This is also a consequence of my decision to model all possible categories of colonial legacies. However, there is no reason to think this affects the coefficients on other variables, as the model with a "collapsed" version of the colonial legacies variable behaves fine.
+
+```{r}
+#| label: fig-check-logit-pref
+#| fig-cap: Model diagnostics for the preferred logistic model with party dominance dummy as the dependent variable.
+#| fig-width: 9
+#| fig-height: 7
+
+check_model(m3)
+```
+

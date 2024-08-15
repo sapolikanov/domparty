@@ -384,6 +384,8 @@ data_built <- party_class |>
                             labels = c("Not Dominant", 
                                        "Autocratic Dominant", 
                                        "Democratic Dominant")),
+         party_reg_dummy = factor(if_else(party_reg == "Not Dominant", 
+                                   "Not Dominant", "Dominant")),
          col_type = factor(col.type)) |> 
   select(-statename, -countryname, -ifs, -ccodecow_1, -ccodecow_2, 
          -`Country Name`, -`Country Code`, -`Indicator Name`, 
